@@ -1,0 +1,42 @@
+# Python cache
+
+**pycache**/
+*.py[cod]
+
+# Virtual environment
+
+.venv/
+venv/
+env/
+
+# Uploaded resumes (temporary user files)
+
+uploads/
+
+# Generated output reports
+
+outputs/
+
+# OS files
+
+.DS_Store
+Thumbs.db
+
+# Logs
+
+*.log
+
+# Python build files
+
+build/
+dist/
+*.egg-info/
+
+# IDE settings
+
+.vscode/
+.idea/
+
+# Streamlit cache
+
+.streamlit/secrets.toml

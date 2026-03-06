@@ -1,5 +1,0 @@
-Chaynika Vyas
-Python Developer Intern
-Skills: Python, Flask, Pandas, NumPy, REST APIs, Git
-Experience: Built a machine learning project using scikit-learn and Flask.
-Education: B.Tech in Computer Science
