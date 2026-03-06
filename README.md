@@ -51,7 +51,7 @@ AI_Resume_Screener_Streamlit
 ### 1️⃣ Clone the repository
 
 ```
-git clone https://github.com/your-username/AI_Resume_Screener_Streamlit.git
+git clone https://github.com/Chaynika0306/AI_Resume_Screener_Streamlit.git
 ```
 
 ### 2️⃣ Navigate to project folder
@@ -99,14 +99,6 @@ The application will open in your browser:
 ```
 http://localhost:8501
 ```
-
----
-
-## 📸 Application Screenshots
-
-### Resume Upload Interface
-
-Add screenshots from the **screenshots folder** here.
 
 ---
 
