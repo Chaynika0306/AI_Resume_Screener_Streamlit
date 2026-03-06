@@ -1,0 +1,14 @@
+[theme]
+# Do NOT force light or dark — let your toggle handle it
+base="light"
+
+# Primary accent color (buttons, sliders)
+primaryColor="#003566"
+
+# KEEP THESE UNCOMMENTED but blank so Streamlit does NOT override CSS
+backgroundColor=""
+secondaryBackgroundColor=""
+textColor=""
+
+# Clean modern UI
+font="sans serif"

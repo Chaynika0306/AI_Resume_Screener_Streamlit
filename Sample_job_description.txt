@@ -1,0 +1,7 @@
+We are seeking a Python Developer / ML Engineer with experience in:
+- Python, pandas, numpy
+- scikit-learn or TensorFlow
+- Natural Language Processing (NLP)
+- SQL and REST APIs
+- Docker and containerization
+- Experience with model deployment and cloud services

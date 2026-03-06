@@ -1,0 +1,3 @@
+We are seeking a Python Developer experienced in backend development, data analysis, and REST APIs.
+The ideal candidate should have strong knowledge of Python, Flask, Pandas, and NumPy.
+Familiarity with SQL, Git, and cloud platforms like AWS is a plus.

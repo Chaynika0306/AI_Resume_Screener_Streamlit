@@ -1,0 +1,5 @@
+Chaynika Vyas
+Web Developer
+Skills: HTML, CSS, JavaScript, React, Git, REST APIs
+Experience: Designed responsive websites and implemented API integrations.
+Education: B.Tech in Computer Science

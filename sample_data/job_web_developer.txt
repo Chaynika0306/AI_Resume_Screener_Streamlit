@@ -1,0 +1,3 @@
+We are hiring a Web Developer proficient in HTML, CSS, JavaScript, and frameworks like React or Django.
+Must have a good understanding of responsive design and web performance optimization.
+Experience with REST APIs and version control (Git) preferred.

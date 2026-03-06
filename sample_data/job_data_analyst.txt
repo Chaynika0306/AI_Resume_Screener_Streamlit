@@ -1,0 +1,3 @@
+Looking for a Data Analyst with skills in Python, Excel, SQL, and data visualization tools such as Power BI or Tableau.
+The candidate should be able to clean, analyze, and interpret data to support business decisions.
+Experience in machine learning or predictive analytics is an advantage.

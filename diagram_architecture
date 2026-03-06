@@ -1,0 +1,17 @@
+digraph Architecture {
+	graph [fontsize=10 rankdir=LR]
+	U [label="User (Recruiter)
+Browser" fillcolor="#E3F2FD" shape=box style="rounded,filled"]
+	S [label="Streamlit Frontend" fillcolor="#E8F5E9" shape=box style="rounded,filled"]
+	P [label="Parser Layer
+(pdfminer / python-docx)" fillcolor="#FFF3E0" shape=box style="rounded,filled"]
+	N [label="NLP + Scoring
+(NLTK / TF-IDF / Cosine)" fillcolor="#F3E5F5" shape=box style="rounded,filled"]
+	D [label="Data Store
+(CSV/SQLite)" fillcolor="#E1F5FE" shape=cylinder style=filled]
+	U -> S
+	S -> P
+	P -> N
+	N -> S
+	N -> D
+}

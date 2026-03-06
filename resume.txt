@@ -1,0 +1,5 @@
+Chaynika Vyas
+Python Developer Intern
+Skills: Python, pandas, NumPy, Flask, HTML, CSS, JavaScript
+Experience: Worked on AI-based projects like resume screening and chatbots.
+Education: B.Tech in Computer Science

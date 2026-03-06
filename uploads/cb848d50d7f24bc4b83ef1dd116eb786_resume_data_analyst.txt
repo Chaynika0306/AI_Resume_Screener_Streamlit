@@ -1,0 +1,5 @@
+Chaynika Vyas
+Data Analyst Trainee
+Skills: Python, Excel, SQL, Tableau, Power BI, Data Cleaning
+Experience: Worked on predictive analytics project using pandas and matplotlib.
+Education: B.Sc in Data Science
