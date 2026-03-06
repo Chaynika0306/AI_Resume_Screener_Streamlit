@@ -10,6 +10,10 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 
+from resume_parser import extract_text_from_file, extract_email, extract_phone
+from skill_extractor import extract_skills
+from matcher import calculate_match
+from ats_score import calculate_ats_score
 # ---------------------------------
 # Session State
 # ---------------------------------
@@ -31,7 +35,9 @@ def load_logo():
         return base64.b64encode(data).decode("utf-8")
     except:
         return None
-
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
 
 # =========================================
 # Theme-aware CSS (Light Only Now)
@@ -44,13 +50,21 @@ def apply_css(theme: str = "light"):
     HEADING = "#001b44"
     ACCENT = "#003566"
     HIGHLIGHT = "#bcdcff"
-
+    bg_img = get_base64_image("assets/background.jpg")
+    
     st.markdown(
         f"""
         <style>
-
-        body {{
-            background: {BG};
+        [data-testid="stAppViewContainer"] {{
+            background: linear-gradient(
+                rgba(255,255,255,0.3),
+                rgba(255,255,255,0.3)
+            ),
+            url("data:image/jpg;base64,{bg_img}");
+    
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat; 
         }}
         .main {{
             background: transparent !important;
@@ -68,7 +82,26 @@ def apply_css(theme: str = "light"):
             font-weight: 900;
             color: {HEADING};
         }}
+        
+        /* JD Text Area Card Style */
+        textarea {{
+            background: rgba(255,255,255,0.95) !important;
+            border-radius: 12px !important;
+            border: 1px solid #cfd9e6 !important;
+            padding: 12px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+            font-size: 14px !important;
+        }}
 
+        /* Streamlit wrapper fix */
+        [data-testid="stTextArea"] textarea {{
+            background: rgba(255,255,255,0.95) !important;
+            border-radius: 12px !important;
+            border: 1px solid #cfd9e6 !important;
+            padding: 12px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+            font-size: 14px !important;}}
+        
         .glass {{
             background: {CARD};
             border-radius: 18px;
@@ -131,6 +164,13 @@ def apply_css(theme: str = "light"):
             color: #000 !important;
             opacity: 1 !important;
         }}
+        @media (max-width: 768px) {{
+
+        [data-testid="stAppViewContainer"]{{
+            background-position: top center !important;
+        }}
+}}
+
 
         </style>
         """,
@@ -141,21 +181,7 @@ def apply_css(theme: str = "light"):
 # =========================================
 # Extract text from resume
 # =========================================
-def extract_text(file):
-    ext = file.name.lower()
 
-    if ext.endswith(".txt"):
-        return file.read().decode("utf-8", errors="ignore")
-
-    if ext.endswith(".pdf"):
-        reader = PdfReader(file)
-        return " ".join(page.extract_text() or "" for page in reader.pages)
-
-    if ext.endswith(".docx"):
-        doc = Document(file)
-        return "\n".join(p.text for p in doc.paragraphs)
-
-    return ""
 
 
 # =========================================
@@ -231,7 +257,16 @@ def build_ai_summary(candidate):
         f"In summary, {remark}."
     )
 
+def hiring_decision(score):
 
+    if score >= 75:
+        return "Strong Hire ✅"
+
+    elif score >= 50:
+        return "Consider 🤔"
+
+    else:
+        return "Reject ❌"
 # =========================================
 # Gauge Chart
 # =========================================
@@ -260,33 +295,68 @@ def build_gauge(score, title="Score"):
 # PDF Report Generator
 # =========================================
 def generate_pdf(df, results, logo_b64):
+
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
+
     width, height = letter
 
+    # ---------- Logo ----------
     if logo_b64:
         logo_bytes = base64.b64decode(logo_b64)
         logo_img = ImageReader(io.BytesIO(logo_bytes))
-        pdf.drawImage(logo_img, 50, height - 110, width=70, height=70)
 
-    pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawString(150, height - 60, "AI Resume Screener Report")
+        pdf.drawImage(
+            logo_img,
+            50,
+            height - 90,
+            width=60,
+            height=60
+        )
+
+    # ---------- Heading ----------
+    pdf.setFont("Helvetica-Bold", 22)
+
+    pdf.drawString(
+        130,
+        height - 60,
+        "AI Resume Screener Report"
+    )
+
+    # ---------- Line ----------
+    pdf.setLineWidth(1)
+    pdf.line(50, height - 100, width - 50, height - 100)
+
+    # ---------- Table Header ----------
+    pdf.setFont("Helvetica-Bold", 12)
+
+    y = height - 130
+
+    pdf.drawString(60, y, "Candidate")
+    pdf.drawString(350, y, "Score")
 
     pdf.setFont("Helvetica", 11)
-    y = height - 120
 
+    y -= 20
+
+    # ---------- Resume Results ----------
     for r in results:
-        pdf.drawString(50, y, f"{r['name']} - {r['score']}%")
-        y -= 16
+
+        pdf.drawString(60, y, r["name"])
+        pdf.drawString(350, y, f"{r['score']}%")
+
+        y -= 18
+
         if y < 60:
             pdf.showPage()
+            pdf.setFont("Helvetica", 11)
             y = height - 60
 
     pdf.save()
+
     buffer.seek(0)
+
     return buffer
-
-
 # =========================================
 # MAIN APP  (Theme Toggle Removed)
 # =========================================
@@ -337,18 +407,52 @@ def main():
         return
 
     jd_text = jd_text_input or jd_file.read().decode("utf-8", errors="ignore")
-
+    skills_list = [
+    "python","machine learning","sql","data analysis",
+    "deep learning","nlp","tensorflow","pandas"
+    ]
     # Process resumes
     results = []
-    for r in resumes:
-        txt = extract_text(r)
-        score, missing, matched = match_keywords(jd_text, txt)
-        results.append(
-            {"name": r.name, "score": score, "missing": missing, "text": txt}
-        )
 
+    for r in resumes:
+
+        txt = extract_text_from_file(r)
+
+        email = extract_email(txt)
+        phone = extract_phone(txt)
+
+        # JD keyword score
+        score, missing, matched = match_keywords(jd_text, txt)
+
+        # Skill extraction
+        skills_found = extract_skills(txt, skills_list)
+
+        # ATS score
+        ats_score_value = calculate_ats_score(score, skills_found)
+        decision = hiring_decision(score)
+        results.append(
+            {
+                "name": r.name,
+                "score": score,
+                "ats_score": ats_score_value,
+                "skills_found": skills_found,
+                "missing": missing,
+                "text": txt,
+                "email": email,
+                "phone": phone,
+                "decision": decision
+            }
+        )
     df = pd.DataFrame(
-        [{"Resume": r["name"], "Score": r["score"]} for r in results]
+    [
+        {
+            "Candidate": r["name"],
+            "Score": r["score"],
+            "ATS Score": r["ats_score"],
+            "Decision": r["decision"]
+        }
+        for r in results
+    ]
     ).sort_values("Score", ascending=False)
 
     st.success("✅ Screening Completed Successfully!")
@@ -357,17 +461,19 @@ def main():
     tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📄 Scores & Reports", "🔎 Text Preview"])
 
     # ---------------- TAB 1: DASHBOARD ----------------
+    # ---------------- TAB 1: DASHBOARD ----------------
     with tab1:
+
         st.markdown(
-            """
-            <div class="glass" style="padding: 25px; margin-bottom: 20px;">
-                <h2 style="margin:0; font-weight:800;">📊 Dashboard Overview</h2>
-                <p style="margin-top:8px; opacity:0.8;">
-                    Insights generated from uploaded resumes and JD analysis.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        """
+        <div class="glass" style="padding: 25px; margin-bottom: 20px;">
+            <h2 style="margin:0; font-weight:800;">📊 Dashboard Overview</h2>
+            <p style="margin-top:8px; opacity:0.8;">
+                Insights generated from uploaded resumes and JD analysis.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
         )
 
         metrics_html = f"""
@@ -383,6 +489,64 @@ def main():
         st.markdown(metrics_html, unsafe_allow_html=True)
 
         best = max(results, key=lambda r: r["score"])
+
+    # ---------------- ALL RESUME ANALYSIS ----------------
+        st.markdown("### 📄 All Resume Analysis")
+
+        for r in results:
+
+            st.markdown(f"#### {r['name']}")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric("Match Score", f"{r['score']}%")
+
+            with col2:
+                st.metric("ATS Score", f"{r['ats_score']}/100")
+
+            st.write("📧 Email:", r["email"])
+            st.write("📱 Phone:", r["phone"])
+
+            st.write("🧠 Skills Found:")
+            st.write(r["skills_found"])
+
+            st.markdown("---")
+
+    # ---------------- CANDIDATE RANKING ----------------
+        st.markdown("### 🏆 Candidate Ranking")
+
+        sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+        for i, r in enumerate(sorted_results, start=1):
+
+            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "🏅"
+
+            st.write(f"{medal} Rank {i} — {r['name']} ({r['score']}%)")
+
+        st.metric("Top Candidate ATS Score", f"{best['ats_score']}/100")
+        st.markdown("### 📊 Resume Comparison Table")
+
+        comparison_data = []
+
+        for r in results:
+
+            comparison_data.append({
+                "Candidate": r["name"],
+                "Score": r["score"],
+                "Decision": r["decision"]
+            })
+
+        comparison_df = pd.DataFrame(comparison_data)
+
+        st.dataframe(comparison_df, use_container_width=True)
+        top_candidate = max(results, key=lambda x: x["score"])
+
+        st.success(
+            f"🏆 Top Candidate: {top_candidate['name']} "
+            f"({top_candidate['score']}%) → {top_candidate['decision']}"
+        )
+    # ---------------- AI SUMMARY ----------------
         summary_paragraph = build_ai_summary(best)
 
         st.markdown(
@@ -399,21 +563,48 @@ def main():
 
         c_left, c_right = st.columns([1.2, 1])
 
+    # ---------------- SCORE DISTRIBUTION ----------------
         with c_left:
+
             st.markdown(
                 "<h3 style='font-weight:800; margin-bottom:10px;'>📊 Score Distribution</h3>",
                 unsafe_allow_html=True,
             )
-            st.bar_chart(df.set_index("Resume")["Score"])
 
+            st.bar_chart(df.set_index("Candidate")["Score"])
+
+    # ---------------- GAUGE + SKILL CHART ----------------
         with c_right:
+
             st.markdown(
                 "<h3 style='font-weight:800; margin-bottom:10px;'>🎯 Top Candidate Score</h3>",
                 unsafe_allow_html=True,
             )
+
             fig_gauge = build_gauge(best["score"], title=best["name"])
             st.plotly_chart(fig_gauge, use_container_width=True)
 
+            st.subheader("🧠 Skill Match Percentage")
+
+            skill_match_data = []
+
+            for r in results:
+
+                total = len(skills_list)
+                found = len(r["skills_found"])
+
+                percent = (found / total) * 100 if total else 0
+
+                skill_match_data.append(
+                    {
+                        "Resume": r["name"],
+                        "Skill Match %": percent
+                    }
+                )
+
+            skill_df = pd.DataFrame(skill_match_data)
+
+            st.bar_chart(skill_df.set_index("Resume"))
     # ---------------- TAB 2: SCORES & REPORTS ----------------
     with tab2:
         st.subheader("📄 Summary Table")
@@ -458,7 +649,11 @@ def main():
         st.session_state["selected_resume"] = selected
 
         chosen = next(r for r in results if r["name"] == selected)
+        st.write("📧 Email:", chosen["email"])
+        st.write("📱 Phone:", chosen["phone"])
 
+        st.write("🧠 Skills Detected:")
+        st.write(chosen["skills_found"])
         html_text = highlight_keywords(chosen["text"], chosen["missing"])
         st.markdown(
             f'<div class="glass" style="white-space: pre-wrap;">{html_text}</div>',
